@@ -2,8 +2,12 @@
 
 
 #include <LiquidCrystal.h>
+#include <SPI.h>
+#include <SD.h>
 
-LiquidCrystal lcd(12, 11, 8, 7, 6, 5);
+
+//LiquidCrystal lcd(12, 11, 8, 7, 6, 5);
+LiquidCrystal lcd(A0, 9, 8, 7, 6, 5);
 
 // Circumference of bicycle wheel expressed in meters
 float bicycleWheelCircumference = 50.2655;  
@@ -35,6 +39,7 @@ unsigned long motivatorStartTime = 0;
 unsigned long lastRevolutionStartTime = 0;
 unsigned long revolutionTime = 0;
 
+
 int currentDisplayMode = 0;
 int showLap = 0;
 int lapCurrentlyShown = 100;
@@ -46,10 +51,10 @@ int currentMaximumMPH;
 int currentAverageMPH;
 int currentMPH;
 
-float arrayDistance[100];
-unsigned long arrayDuration[100];
-int arrayMaximumMPH[100];
-int arrayAverageMPH[100];
+float arrayDistance[40];
+unsigned long arrayDuration[40];
+int arrayMaximumMPH[40];
+int arrayAverageMPH[40];
 
 unsigned long revolutionCount = 0;
 unsigned long currentTime = 0;
@@ -64,6 +69,8 @@ int intSeconds;
 unsigned long milliSecondsInSecond = 1000;
 unsigned long milliSecondsInMinute = 60000;
 unsigned long milliSecondsInHour = 3600000;
+
+File myFile; 
 
 void setup()
 {
@@ -84,10 +91,22 @@ void setup()
   lcd.print("HI LADY MAE");
   lcd.setCursor(4, 1);
   lcd.print("PRESS BUTTON TO START");
+
+    // Open serial communications and wait for port to open:
+    Serial.begin(9600);
+  
+    Serial.print("Initializing SD card...");
+    if (!SD.begin(10)) {
+    Serial.println("initialization failed!");
+     while (1);
+    }
+    Serial.println("initialization done.");
+
   
 }
 
 void loop() {
+
 
   // Get current time in millis
   currentTime = millis();
@@ -199,9 +218,13 @@ void loop() {
           arrayAverageMPH[0] = arrayDistance[0] * 3600000 / arrayDuration[0];  
           if (currentMaximumMPH > arrayMaximumMPH[0]) {
             arrayMaximumMPH[0] = currentMaximumMPH;
-          }        
-        }
+          }  
 
+
+//          }
+   
+        
+        }
         // In case "Great Work Lady Mae!" has been showing, turn it off now since we want to show "PAUSED!" message
         // and we don't want it to be removed when "Great Work Lady Mae!" times out
         motivatorShown = LOW;
@@ -322,6 +345,46 @@ void loop() {
     if (currentDisplayMode == 2) {
 
       starLoop(currentMPH);
+      
+//      Serial.println(currentDuration);
+      
+      if((currentDuration%30000 == 0) || (currentDuration%30000<=200)){
+          if (SD.exists("speedlog.txt")) {
+            Serial.println(currentDuration%30000);
+
+            Serial.println("speed.txt exists.");
+            myFile = SD.open("speedlog.txt", FILE_WRITE);
+
+          } else {
+        //when the new sd card arrives, format it FIRST then write to it every 30 seconds
+//            Serial.println("speedlog.txt doesn't exist.");
+            myFile = SD.open("speedlog.txt", FILE_WRITE);
+            myFile.println("Current_Time,currentDistance,currentAvgMPH,currentMaxMPH");            
+  
+          }
+
+         // if the file opened okay, write to it:
+        if (myFile) {
+          Serial.print("Writing to test.txt...");
+          myFile.print(currentTime);
+          myFile.print(",");
+          myFile.print(currentDistance);
+          myFile.print(",");
+          myFile.print(currentDuration);
+          myFile.print(",");
+          myFile.print(currentAverageMPH);
+          myFile.print(",");
+          myFile.println(currentMaximumMPH);
+
+                // close the file:
+          myFile.close();
+          Serial.println("closed.");
+
+        }
+
+        
+
+      }
       
     } 
     
@@ -587,13 +650,7 @@ void starLoop(int speed) {
     
 
       count++;
-//      delay(5000);
-//      lcd.clear();
     }
-
-//    delay(1000);
-//    lcd.clear();
-//    delay(500);
 
 }
 
