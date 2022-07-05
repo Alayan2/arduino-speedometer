@@ -51,10 +51,10 @@ int currentMaximumMPH;
 int currentAverageMPH;
 int currentMPH;
 
-float arrayDistance[40];
-unsigned long arrayDuration[40];
-int arrayMaximumMPH[40];
-int arrayAverageMPH[40];
+float arrayDistance[20];
+unsigned long arrayDuration[20];
+int arrayMaximumMPH[20];
+int arrayAverageMPH[20];
 
 unsigned long revolutionCount = 0;
 unsigned long currentTime = 0;
@@ -162,7 +162,7 @@ void loop() {
       motivatorStartTime = currentTime;
 
       currentLap = 1;
-      resetLapVariables();
+      resetLapVariables(); //1st lap
       currentDisplayMode = 1;
 
     }
@@ -259,7 +259,7 @@ void loop() {
       motivatorStartTime = currentTime;
 
       currentLap = 1;
-      resetLapVariables();
+      resetLapVariables(); 
       currentDisplayMode = 1;
 
     }
@@ -286,6 +286,8 @@ void loop() {
         // Otherwise we are in paused mode so cycle through lap data available, including totals page
         else {
           currentDisplayMode = 3;
+          writeToFile();
+
           showLap++;
           if (showLap > currentLap) {
             showLap = 0; // Show totals
@@ -316,6 +318,7 @@ void loop() {
 
     // If "Paused!" has been showing, take it off if it has been 2 seconds or more
   if (pausedShown && (currentTime >= (pausedStartTime + 2000))) {
+    writeToFile();
     pausedShown = LOW;
     showLabels(currentDisplayMode);
   }
@@ -348,43 +351,7 @@ void loop() {
       
 //      Serial.println(currentDuration);
       
-      if((currentDuration%30000 == 0) || (currentDuration%30000<=200)){
-          if (SD.exists("speedlog.txt")) {
-            Serial.println(currentDuration%30000);
 
-            Serial.println("speed.txt exists.");
-            myFile = SD.open("speedlog.txt", FILE_WRITE);
-
-          } else {
-        //when the new sd card arrives, format it FIRST then write to it every 30 seconds
-//            Serial.println("speedlog.txt doesn't exist.");
-            myFile = SD.open("speedlog.txt", FILE_WRITE);
-            myFile.println("Current_Time,currentDistance,currentAvgMPH,currentMaxMPH");            
-  
-          }
-
-         // if the file opened okay, write to it:
-        if (myFile) {
-          Serial.print("Writing to test.txt...");
-          myFile.print(currentTime);
-          myFile.print(",");
-          myFile.print(currentDistance);
-          myFile.print(",");
-          myFile.print(currentDuration);
-          myFile.print(",");
-          myFile.print(currentAverageMPH);
-          myFile.print(",");
-          myFile.println(currentMaximumMPH);
-
-                // close the file:
-          myFile.close();
-          Serial.println("closed.");
-
-        }
-
-        
-
-      }
       
     } 
     
@@ -654,8 +621,45 @@ void starLoop(int speed) {
 
 }
 
+void writeToFile() {
+
+  
+          if (SD.exists("speedlog.txt")) {
+            Serial.println("speed.txt exists.");
+            myFile = SD.open("speedlog.txt", FILE_WRITE);
+
+          } else {
+        //when the new sd card arrives, format it FIRST then write to it every 30 seconds
+//            Serial.println("speedlog.txt doesn't exist.");
+            myFile = SD.open("speedlog.txt", FILE_WRITE);
+            myFile.println("currentTime,currentDistance,currentDuration,currentAvgMPH,currentMaxMPH");            
+  
+          }
+
+         // if the file opened okay, write to it:
+        if (myFile) {
+          Serial.print("Writing to test.txt...");
+          myFile.print(currentTime);
+          myFile.print(",");
+          myFile.print(currentDistance);
+          myFile.print(",");
+          myFile.print(currentDuration);
+          myFile.print(",");
+          myFile.print(currentAverageMPH);
+          myFile.print(",");
+          myFile.println(currentMaximumMPH);
+
+                // close the file:
+          myFile.close();
+          Serial.println("closed.");
+
+        }
+}
+
+
 // Reset all variables used for calculating current/ongoing lap
 void resetLapVariables() {
+      
   revolutionCount = 0;
 
   lapStartTime = currentTime;
